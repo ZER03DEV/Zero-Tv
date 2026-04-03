@@ -1,1 +1,115 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="description" content="Zero TV - أقوى منصة لمشاهدة القنوات التلفزيونية المباشرة مجاناً بجودة 4K Ultra HD">
+    <meta name="author" content="Zero Dev">
+    <meta name="copyright" content="Zero Dev © 2026">
+    <meta name="theme-color" content="#000000">
+    <title>Zero TV</title>
+    <!-- Shaka Player CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/shaka-player@4.7.13/dist/shaka-player.compiled.js"></script>
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts - Tajawal (خط عصري احترافي) -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
+<div class="container">
+    <!-- Header Premium -->
+    <div class="header">
+        <div class="logo">
+            <h1><i class="fas fa-broadcast-tower"></i> Zero <span>TV</span></h1>
+            <p>بث حي • جودة 4K • تجربة لا مثيل لها</p>
+        </div>
+        <div class="stats-badge">
+            <div class="stat-item"><i class="fas fa-tv"></i> <span id="channelCount">0</span> قناة</div>
+            <div class="stat-item"><i class="fas fa-star"></i> <span id="favCount">0</span> مفضلة</div>
+            <div class="stat-item"><i class="fas fa-eye"></i> <span id="onlineCount">بث مباشر</span></div>
+        </div>
+        <div class="controls">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="ابحث عن قناة..." autocomplete="off">
+            </div>
+            <div class="category-filter">
+                <i class="fas fa-filter"></i>
+                <select id="categorySelect">
+                    <option value="all">جميع التصنيفات</option>
+                </select>
+            </div>
+            <button id="favoritesFilterBtn" class="favorites-btn"><i class="fas fa-heart"></i> المفضلة</button>
+            <button id="recentBtn" class="recent-btn"><i class="fas fa-clock"></i> آخر مشاهدة</button>
+        </div>
+    </div>
+
+    <!-- Player Section -->
+    <div class="player-section" id="playerSection" style="display: none;">
+        <div class="player-overlay" id="playerOverlay">
+            <div class="loading-spinner" id="playerLoader" style="display: none;">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>جاري تحميل البث...</span>
+            </div>
+        </div>
+        <div id="video-container">
+            <video id="video-player" controls autoplay playsinline muted></video>
+        </div>
+        <div class="channel-info">
+            <img id="currentLogo" class="current-logo" src="" alt="logo">
+            <div class="channel-details">
+                <span id="currentChannelName" class="current-title">---</span>
+                <span id="currentCategory" class="current-category"></span>
+            </div>
+            <div class="player-actions">
+                <i id="favoriteStar" class="fas fa-star fav-star"></i>
+                <i id="fullscreenBtn" class="fas fa-expand fullscreen-btn"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section Title -->
+    <div class="section-title">
+        <h2><i class="fas fa-satellite-dish"></i> القنوات المباشرة</h2>
+        <div class="view-toggle">
+            <i class="fas fa-th-large active" data-view="grid"></i>
+            <i class="fas fa-list" data-view="list"></i>
+        </div>
+    </div>
+
+    <!-- Channels Grid -->
+    <div id="channelsGrid" class="channels-grid">
+        <div class="loader-wrapper">
+            <div class="loader"></div>
+            <p>جاري تحميل آلاف القنوات...</p>
+        </div>
+    </div>
+
+    <!-- Footer Premium -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-logo">
+                <i class="fas fa-broadcast-tower"></i>
+                <span>Zero TV</span>
+            </div>
+            <div class="footer-info">
+                <p>المدعوم من سيرفر <strong class="server-name">ZeroDev TV</strong></p>
+                <p>جميع الحقوق محفوظة © 2026</p>
+            </div>
+            <div class="footer-dev">
+                <i class="fas fa-code"></i>
+                <span>تطوير <strong class="dev-name">Zero Dev</strong></span>
+                <a href="https://zerodev.site" target="_blank" class="dev-link">zerodev.site</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>تمتع بمشاهدة القنوات العالمية بجودة عالية | تقنية Shaka Player</p>
+        </div>
+    </footer>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
