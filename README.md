@@ -1,45 +1,56 @@
-# 📺 Zero TV | منصة البث المباشر فائقة الجودة
+# 📺 Zero TV | منصة البث المباشر - ZeroDev TV API
 
 <div align="center">
   
-![Zero TV Logo](https://img.shields.io/badge/Zero%20TV-2026-blue?style=for-the-badge&logo=tv)
-![Version](https://img.shields.io/badge/version-2.0.0-orange?style=flat-square)
-![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
-![Made with](https://img.shields.io/badge/Made%20with-JavaScript-red?style=flat-square)
+![Zero TV](https://img.shields.io/badge/Zero%20TV-2026-blue?style=flat-square&logo=tv)
+![API](https://img.shields.io/badge/API-ZeroDev%20TV-orange?style=flat-square)
+![Version](https://img.shields.io/badge/version-2.0.0-green?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-purple?style=flat-square)
 
-**أقوى منصة لمشاهدة القنوات التلفزيونية المباشرة مجاناً**
-
-[زر العرض التجريبي](#) | [تقرير المشاكل](#) | [تواصل مع المطور](#)
+**منصة متكاملة لمشاهدة القنوات التلفزيونية المباشرة بجودة عالية**
 
 </div>
 
 ---
 
-## ✨ عن الموقع
+## 📌 عن المشروع
 
-**Zero TV** هي منصة متطورة لمشاهدة القنوات التلفزيونية المباشرة من جميع أنحاء العالم. تم بناء المنصة بأحدث التقنيات لتوفير تجربة مشاهدة سلسة واحترافية.
+Zero TV هو موقع متكامل لبث القنوات التلفزيونية المباشرة يعمل بالكامل على GitHub Pages بدون الحاجة إلى Backend. يستخدم الموقع **ZeroDev TV API** لجلب بيانات القنوات والستريمات من iptv-org.
 
-### 🎯 المميزات الرئيسية
+### ✨ المميزات
 
 | الميزة | الوصف |
 |--------|-------|
-| 📡 **بث مباشر** | آلاف القنوات العالمية بجودة عالية |
-| 🎨 **تصميم عصري** | واجهة مستخدم فائقة الجودة بتقنيات حديثة |
-| 🔍 **بحث متقدم** | ابحث عن القنوات بسهولة وسرعة |
-| 🏷️ **تصنيفات ذكية** | فلتر القنوات حسب النوع والتصنيف |
-| ⭐ **المفضلة** | حفظ القنوات المفضلة للوصول السريع |
-| 💾 **تخزين مؤقت** | تحميل سريع للبيانات مع تخزين ذكي |
-| 📱 **متجاوب بالكامل** | يدعم جميع الأجهزة (جوال، تابلت، كمبيوتر) |
-| 🎬 **شاشة كاملة** | دعم وضع ملء الشاشة |
+| 🎬 **بث مباشر** | آلاف القنوات العالمية |
+| 🎨 **تصميم عصري** | واجهة مستخدم احترافية |
+| 🔍 **بحث متقدم** | ابحث عن أي قناة بسهولة |
+| 🏷️ **فلتر بالتصنيفات** | تنظيم ذكي للقنوات |
+| ⭐ **قائمة المفضلة** | حفظ القنوات المفضلة |
+| 💾 **تخزين مؤقت** | تحميل أسرع بعد الزيارة الأولى |
+| 📱 **متجاوب بالكامل** | يعمل على جميع الأجهزة |
+| 🎯 **آخر قناة مشاهدة** | تذكر آخر قناة تم تشغيلها |
 
 ---
 
 ## 🛠️ التقنيات المستخدمة
 
-```mermaid
-graph LR
-    A[HTML5] --> B[CSS3]
-    B --> C[JavaScript]
-    C --> D[Shaka Player]
-    D --> E[iptv-org API]
-    E --> F[LocalStorage Cache]
+<div align="center">
+
+| التقنية | الإصدار | الاستخدام |
+|---------|---------|-----------|
+| HTML5 | - | هيكل الموقع |
+| CSS3 | - | التصميم والتنسيق |
+| JavaScript | ES6+ | منطق الموقع |
+| Shaka Player | 4.7.13 | تشغيل البث |
+| Font Awesome | 6.0 | الأيقونات |
+| Google Fonts | Cairo | الخط الرئيسي |
+
+</div>
+
+### مصادر البيانات (ZeroDev TV API)
+
+```javascript
+// يتم جلب البيانات من خلال ZeroDev TV API من المصادر التالية:
+- https://iptv-org.github.io/api/channels.json
+- https://iptv-org.github.io/api/streams.json  
+- https://iptv-org.github.io/api/logos.json
