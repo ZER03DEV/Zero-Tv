@@ -1,5 +1,7 @@
 // app.js - التطبيق الكامل لموقع Zero TV 2026
 
+document.addEventListener("DOMContentLoaded", () => {
+
 // ======================== المتغيرات العامة ========================
 let channelsMaster = [];
 let streamsMap = new Map();
@@ -60,7 +62,7 @@ function saveFavorites() {
 }
 
 function updateFavCounter() {
-    favCountSpan.innerText = favorites.size;
+    if (favCountSpan) favCountSpan.innerText = favorites.size;
 }
 
 function toggleFavorite(channelId) {
@@ -91,7 +93,7 @@ function updateFavoriteStarUI() {
     }
 }
 
-// ======================== جلب البيانات من API ========================
+// ======================== جلب البيانات ========================
 async function fetchJSON(url) {
     try {
         const res = await fetch(url);
@@ -104,12 +106,7 @@ async function fetchJSON(url) {
 }
 
 async function fetchAndMergeData() {
-    gridContainer.innerHTML = `
-        <div class="loader-wrapper">
-            <div class="loader"></div>
-            <p>جاري تحميل آلاف القنوات...</p>
-        </div>
-    `;
+    gridContainer.innerHTML = `<div class="loader">جاري التحميل...</div>`;
 
     const [channelsData, streamsData, logosData] = await Promise.all([
         fetchJSON('https://iptv-org.github.io/api/channels.json'),
@@ -117,88 +114,49 @@ async function fetchAndMergeData() {
         fetchJSON('https://iptv-org.github.io/api/logos.json')
     ]);
 
-    if (!channelsData) {
-        gridContainer.innerHTML = `<div class="error-msg"><i class="fas fa-wifi"></i> فشل الاتصال بالخادم</div>`;
-        return [];
-    }
+    if (!channelsData) return [];
 
-    // بناء الستريمات
     streamsMap.clear();
-    if (streamsData && Array.isArray(streamsData)) {
+
+    if (streamsData) {
         for (const stream of streamsData) {
-            const chId = stream.channel;
-            if (!chId) continue;
-            
-            let url = stream.url;
-            if (!url || !url.startsWith('http')) continue;
-            
-            // تجاهل الستريمات المعطلة
-            if (stream.status === 'offline') continue;
-            
-            if (!streamsMap.has(chId)) {
-                streamsMap.set(chId, url);
-            } else {
-                const current = streamsMap.get(chId);
-                // إعطاء أولوية لـ m3u8
-                if (url.includes('.m3u8') && !current.includes('.m3u8')) {
-                    streamsMap.set(chId, url);
-                }
-                // إعطاء أولوية لـ mpd
-                else if (url.includes('.mpd') && !current.includes('.mpd') && !current.includes('.m3u8')) {
-                    streamsMap.set(chId, url);
-                }
-            }
+            if (!stream.channel || !stream.url) continue;
+            if (!stream.url.startsWith('http')) continue;
+            streamsMap.set(stream.channel, stream.url);
         }
     }
 
-    // بناء الشعارات
-    if (logosData && Array.isArray(logosData)) {
+    if (logosData) {
         for (const logo of logosData) {
-            if (logo.channel && logo.url) {
-                logosMap.set(logo.channel, logo.url);
-            }
+            logosMap.set(logo.channel, logo.url);
         }
     }
 
-    // دمج البيانات
     const merged = [];
     for (const ch of channelsData) {
-        const chId = ch.id;
-        const streamUrl = streamsMap.get(chId);
-        
-        if (!streamUrl) continue;
-        
-        const logoUrl = logosMap.get(chId) || ch.logo || '';
-        
-        // معالجة التصنيفات بشكل صحيح
-        let category = 'General';
-        if (ch.categories && Array.isArray(ch.categories) && ch.categories.length > 0) {
-            category = ch.categories[0];
-        } else if (ch.category) {
-            category = ch.category;
-        }
-        
+        const url = streamsMap.get(ch.id);
+        if (!url) continue;
+
+        const category = ch.categories?.[0] || ch.category || 'General';
         categoriesSet.add(category);
+
         merged.push({
-            id: chId,
-            name: ch.name || chId,
-            logo: logoUrl,
-            category: category,
-            streamUrl: streamUrl,
-            country: ch.country || '',
-            languages: ch.languages || []
+            id: ch.id,
+            name: ch.name,
+            logo: logosMap.get(ch.id) || ch.logo,
+            category,
+            streamUrl: url
         });
     }
-    
-    console.log(`✅ تم تحميل ${merged.length} قناة بنجاح`);
+
     updateCategoryDropdown();
     return merged;
 }
 
 function updateCategoryDropdown() {
-    const sorted = Array.from(categoriesSet).sort();
-    categorySelect.innerHTML = '<option value="all">🌟 جميع التصنيفات</option>';
-    sorted.forEach(cat => {
+    if (!categorySelect) return;
+    categorySelect.innerHTML = '<option value="all">الكل</option>';
+    categoriesSet.forEach(cat => {
         const opt = document.createElement('option');
         opt.value = cat;
         opt.textContent = cat;
@@ -206,350 +164,99 @@ function updateCategoryDropdown() {
     });
 }
 
-// ======================== الفلترة والعرض ========================
+// ======================== عرض القنوات ========================
 function getFilteredChannels() {
     let filtered = [...channelsMaster];
-    const term = searchInput.value.trim().toLowerCase();
-    const cat = categorySelect.value;
-    
-    if (term) {
-        filtered = filtered.filter(ch => ch.name.toLowerCase().includes(term));
-    }
-    if (cat !== 'all') {
-        filtered = filtered.filter(ch => ch.category === cat);
-    }
-    if (isFavoriteMode) {
-        filtered = filtered.filter(ch => favorites.has(ch.id));
-    }
+    const term = searchInput?.value.toLowerCase() || '';
+    const cat = categorySelect?.value || 'all';
+
+    if (term) filtered = filtered.filter(ch => ch.name.toLowerCase().includes(term));
+    if (cat !== 'all') filtered = filtered.filter(ch => ch.category === cat);
+    if (isFavoriteMode) filtered = filtered.filter(ch => favorites.has(ch.id));
+
     return filtered;
 }
 
 function renderChannelsGrid() {
+    if (!gridContainer) return;
+
     const filtered = getFilteredChannels();
-    channelCountSpan.innerText = filtered.length;
-    
-    if (filtered.length === 0) {
-        gridContainer.innerHTML = `<div class="no-results"><i class="fas fa-satellite-dish"></i> لا توجد قنوات تطابق البحث</div>`;
-        return;
-    }
-    
+    if (channelCountSpan) channelCountSpan.innerText = filtered.length;
+
     let html = '';
     for (const ch of filtered) {
-        const isFav = favorites.has(ch.id);
-        const favIcon = isFav ? '<i class="fas fa-star" style="color:#ff00ff; font-size:0.7rem; margin-left:4px;"></i>' : '';
         html += `
-            <div class="channel-card" data-id="${ch.id}">
-                <img src="${ch.logo || 'https://via.placeholder.com/90?text=TV'}" alt="${ch.name}" loading="lazy" onerror="this.src='https://via.placeholder.com/90?text=TV'">
-                <h4>${favIcon} ${escapeHtml(ch.name.substring(0, 35))}</h4>
-                <div class="category-tag">${escapeHtml(ch.category)}</div>
-            </div>
-        `;
+        <div class="channel-card" data-id="${ch.id}">
+            <img src="${ch.logo || ''}">
+            <h4>${ch.name}</h4>
+        </div>`;
     }
-    
+
     gridContainer.innerHTML = html;
-    
-    // إضافة حدث النقر على البطاقات
+
     document.querySelectorAll('.channel-card').forEach(card => {
-        card.addEventListener('click', () => {
-            const id = card.getAttribute('data-id');
-            const selected = channelsMaster.find(ch => ch.id === id);
-            if (selected) playChannel(selected);
-        });
+        card.onclick = () => {
+            const id = card.dataset.id;
+            const ch = channelsMaster.find(c => c.id === id);
+            if (ch) playChannel(ch);
+        };
     });
 }
 
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m]);
-}
-
-// ======================== Shaka Player ========================
+// ======================== تشغيل الفيديو ========================
 async function initShaka() {
-    if (typeof shaka === 'undefined') {
-        console.error('Shaka Player not loaded');
-        return false;
-    }
-    
-    if (!shaka.Player.isBrowserSupported()) {
-        showToast('المتصفح لا يدعم التشغيل', true);
-        return false;
-    }
-    
-    if (!player) {
-        player = new shaka.Player(videoPlayer);
-        player.configure({
-            drm: { retryParameters: { timeout: 15000, maxAttempts: 3 } },
-            manifest: { retryParameters: { timeout: 15000, maxAttempts: 3 } },
-            streaming: {
-                rebufferingGoal: 2,
-                bufferingGoal: 15,
-                retryParameters: { timeout: 15000, maxAttempts: 3 }
-            }
-        });
-        
-        player.addEventListener('error', (event) => {
-            console.error('Shaka error', event.detail);
-            showPlayerError('فشل تشغيل البث، حاول مرة أخرى');
-            if (playerLoader) playerLoader.style.display = 'none';
-        });
-        
-        player.addEventListener('loading', () => {
-            if (playerLoader) playerLoader.style.display = 'flex';
-        });
-        
-        player.addEventListener('loaded', () => {
-            if (playerLoader) playerLoader.style.display = 'none';
-        });
-    }
+    if (!window.shaka || !videoPlayer) return false;
+    if (!player) player = new shaka.Player(videoPlayer);
     return true;
 }
 
 async function playChannel(channel) {
-    if (!channel || !channel.streamUrl) {
-        showPlayerError('رابط البث غير متوفر');
-        return;
-    }
-    
-    // التمرير لأعلى الصفحة
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    
-    // تحديث واجهة المشغل
+    if (!channel || !channel.streamUrl) return;
+
     currentChannelObj = channel;
-    playerSection.style.display = 'block';
-    currentChannelNameSpan.innerText = channel.name;
-    currentCategorySpan.innerText = channel.category;
-    currentLogoImg.src = channel.logo || 'https://via.placeholder.com/60?text=TV';
-    currentLogoImg.onerror = () => {
-        currentLogoImg.src = 'https://via.placeholder.com/60?text=TV';
-    };
-    updateFavoriteStarUI();
-    
-    // حفظ آخر قناة تم تشغيلها
-    localStorage.setItem('last_channel_id', channel.id);
-    
-    // إظهار مؤشر التحميل
-    if (playerLoader) playerLoader.style.display = 'flex';
-    if (playerOverlay) playerOverlay.classList.remove('hidden');
-    
+    if (playerSection) playerSection.style.display = 'block';
+    if (currentChannelNameSpan) currentChannelNameSpan.innerText = channel.name;
+
     try {
         await initShaka();
-        if (!player) throw new Error('Player not ready');
-        
-        // إضافة headers للتوافق
-        const filter = (type, request) => {
-            request.headers['Referer'] = window.location.origin;
-            request.headers['User-Agent'] = navigator.userAgent;
-        };
-        player.getNetworkingEngine().registerRequestFilter(filter);
-        
         await player.load(channel.streamUrl);
-        
-        // حل مشكلة Autoplay
-        videoPlayer.muted = true;
-        await videoPlayer.play().catch(() => {});
-        videoPlayer.muted = false;
-        
-        // إخفاء مؤشر التحميل
-        if (playerLoader) playerLoader.style.display = 'none';
-        if (playerOverlay) playerOverlay.classList.add('hidden');
-        
-        // إزالة رسائل الخطأ السابقة
-        const errDiv = document.querySelector('.player-error-msg');
-        if (errDiv) errDiv.remove();
-        
-        showToast(`🟢 الآن تشاهد: ${channel.name}`);
-    } catch (error) {
-        console.error('Load error', error);
-        showPlayerError('تعذر تشغيل القناة، قد يكون البث معطلاً');
-        if (playerLoader) playerLoader.style.display = 'none';
+        await videoPlayer.play();
+    } catch (e) {
+        showToast('فشل التشغيل', true);
     }
 }
 
-function showPlayerError(msg) {
-    let errDiv = document.querySelector('.player-error-msg');
-    if (!errDiv) {
-        errDiv = document.createElement('div');
-        errDiv.className = 'error-msg player-error-msg';
-        errDiv.style.margin = '0.5rem';
-        errDiv.style.position = 'absolute';
-        errDiv.style.bottom = '80px';
-        errDiv.style.left = '20px';
-        errDiv.style.right = '20px';
-        errDiv.style.zIndex = '100';
-        document.getElementById('video-container').appendChild(errDiv);
-    }
-    errDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${msg}`;
-    setTimeout(() => {
-        if (errDiv && errDiv.parentNode) errDiv.remove();
-    }, 5000);
-}
-
-// ======================== آخر قناة تم مشاهدتها ========================
-async function restoreLastChannel() {
-    const lastId = localStorage.getItem('last_channel_id');
-    if (lastId && channelsMaster.length) {
-        const last = channelsMaster.find(ch => ch.id === lastId);
-        if (last) {
-            await playChannel(last);
-            return true;
-        }
-    }
-    return false;
-}
-
-function goToRecentChannel() {
-    const lastId = localStorage.getItem('last_channel_id');
-    if (lastId && channelsMaster.length) {
-        const last = channelsMaster.find(ch => ch.id === lastId);
-        if (last) {
-            playChannel(last);
-            showToast('↺ العودة لآخر قناة');
-        } else {
-            showToast('لا توجد قناة سابقة', true);
-        }
-    } else {
-        showToast('لم تشاهد أي قناة بعد', true);
-    }
-}
-
-// ======================== ملء الشاشة ========================
-function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => {
-            console.warn(`Error attempting fullscreen: ${err.message}`);
-        });
-        fullscreenBtn.classList.remove('fa-expand');
-        fullscreenBtn.classList.add('fa-compress');
-    } else {
-        document.exitFullscreen();
-        fullscreenBtn.classList.remove('fa-compress');
-        fullscreenBtn.classList.add('fa-expand');
-    }
-}
-
-document.addEventListener('fullscreenchange', () => {
-    if (document.fullscreenElement) {
-        fullscreenBtn.classList.remove('fa-expand');
-        fullscreenBtn.classList.add('fa-compress');
-    } else {
-        fullscreenBtn.classList.remove('fa-compress');
-        fullscreenBtn.classList.add('fa-expand');
-    }
-});
-
-// ======================== تبديل عرض القنوات ========================
-function initViewToggle() {
-    const viewIcons = document.querySelectorAll('.view-toggle i');
-    viewIcons.forEach(icon => {
-        icon.addEventListener('click', () => {
-            viewIcons.forEach(i => i.classList.remove('active'));
-            icon.classList.add('active');
-            currentView = icon.getAttribute('data-view');
-            
-            if (currentView === 'list') {
-                gridContainer.classList.add('list-view');
-            } else {
-                gridContainer.classList.remove('list-view');
-            }
-        });
-    });
-}
-
-// ======================== أحداث المستخدم ========================
+// ======================== الأحداث ========================
 function attachEvents() {
-    searchInput.addEventListener('input', () => renderChannelsGrid());
-    categorySelect.addEventListener('change', () => renderChannelsGrid());
-    
-    favoritesFilterBtn.addEventListener('click', () => {
+    searchInput?.addEventListener('input', renderChannelsGrid);
+    categorySelect?.addEventListener('change', renderChannelsGrid);
+
+    favoritesFilterBtn?.addEventListener('click', () => {
         isFavoriteMode = !isFavoriteMode;
-        if (isFavoriteMode) {
-            favoritesFilterBtn.style.background = 'linear-gradient(135deg, #00d4ff, #ff00ff)';
-            favoritesFilterBtn.style.color = '#fff';
-            favoritesFilterBtn.innerHTML = '<i class="fas fa-star"></i> عرض الكل';
-        } else {
-            favoritesFilterBtn.style.background = 'rgba(20, 20, 30, 0.9)';
-            favoritesFilterBtn.style.color = '#00d4ff';
-            favoritesFilterBtn.innerHTML = '<i class="fas fa-heart"></i> المفضلة';
-        }
         renderChannelsGrid();
     });
-    
-    recentBtn.addEventListener('click', goToRecentChannel);
-    
-    favoriteStar.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (currentChannelObj) toggleFavorite(currentChannelObj.id);
+
+    recentBtn?.addEventListener('click', () => {
+        const last = localStorage.getItem('last_channel_id');
+        if (last) {
+            const ch = channelsMaster.find(c => c.id === last);
+            if (ch) playChannel(ch);
+        }
     });
-    
-    if (fullscreenBtn) {
-        fullscreenBtn.addEventListener('click', toggleFullscreen);
-    }
 }
 
-// ======================== التخزين المؤقت (Cache) ========================
-async function loadWithCache() {
-    const CACHE_KEY = 'zero_tv_channels_v1';
-    const CACHE_TIME = 'zero_tv_cache_time';
-    const cached = localStorage.getItem(CACHE_KEY);
-    const cacheTime = localStorage.getItem(CACHE_TIME);
-    const now = Date.now();
-    const CACHE_DURATION = 30 * 60 * 1000; // 30 دقيقة
-    
-    if (cached && cacheTime && (now - parseInt(cacheTime)) < CACHE_DURATION) {
-        try {
-            channelsMaster = JSON.parse(cached);
-            if (channelsMaster.length) {
-                categoriesSet.clear();
-                channelsMaster.forEach(ch => categoriesSet.add(ch.category));
-                updateCategoryDropdown();
-                renderChannelsGrid();
-                await initShaka();
-                await restoreLastChannel();
-                refreshInBackground();
-                return true;
-            }
-        } catch (e) {}
-    }
-    
-    const fresh = await fetchAndMergeData();
-    if (fresh.length) {
-        channelsMaster = fresh;
-        localStorage.setItem(CACHE_KEY, JSON.stringify(fresh));
-        localStorage.setItem(CACHE_TIME, now.toString());
-        renderChannelsGrid();
-        await initShaka();
-        const restored = await restoreLastChannel();
-        if (!restored && !currentChannelObj && channelsMaster.length) {
-            await playChannel(channelsMaster[0]);
-        }
-    } else {
-        gridContainer.innerHTML = `<div class="error-msg"><i class="fas fa-wifi"></i> فشل التحميل، تأكد من اتصالك بالإنترنت</div>`;
-    }
-}
-
-async function refreshInBackground() {
-    try {
-        const fresh = await fetchAndMergeData();
-        if (fresh.length && fresh.length !== channelsMaster.length) {
-            channelsMaster = fresh;
-            localStorage.setItem('zero_tv_channels_v1', JSON.stringify(fresh));
-            localStorage.setItem('zero_tv_cache_time', Date.now().toString());
-            categoriesSet.clear();
-            channelsMaster.forEach(ch => categoriesSet.add(ch.category));
-            updateCategoryDropdown();
-            renderChannelsGrid();
-            showToast('تم تحديث قائمة القنوات');
-        }
-    } catch (e) {}
-}
-
-// ======================== تهيئة التطبيق ========================
+// ======================== تشغيل ========================
 async function init() {
     attachEvents();
     loadFavorites();
-    initViewToggle();
-    await loadWithCache();
+
+    const data = await fetchAndMergeData();
+    channelsMaster = data;
+
+    renderChannelsGrid();
+    await initShaka();
 }
 
-// بدء التشغيل
 init();
+
+});
